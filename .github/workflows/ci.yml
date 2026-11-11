@@ -22,7 +22,7 @@ jobs:
           --health-cmd "pg_isready -U ${{ secrets.POSTGRES_USER }}"
           --health-interval 5s
           --health-timeout 5s
-          --health-retries 10
+          --health-retries 11
 
     env:
       DATABASE_URL: postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432/${{ vars.POSTGRES_DB }}
