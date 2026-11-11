@@ -1,0 +1,35 @@
+{
+  "name": "-2026.2--web2-node-express-ts-prisma-postgresql",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsx watch --env-file=.env src/server.ts",
+    "build": "prisma generate && tsc",
+    "start": "node dist/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/silobocarvalho/-2026.2--Web2-node-express-ts-prisma-PostgreSQL.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/silobocarvalho/-2026.2--Web2-node-express-ts-prisma-PostgreSQL/issues"
+  },
+  "homepage": "https://github.com/silobocarvalho/-2026.2--Web2-node-express-ts-prisma-PostgreSQL#readme",
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "express": "^5.3.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.4",
+    "prisma": "^6.19.3",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

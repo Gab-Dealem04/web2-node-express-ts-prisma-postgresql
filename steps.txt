@@ -1,0 +1,108 @@
+1. Configuração
+npm init -y
+npm i express@5 @prisma/client@6 zod
+npm i -D typescript tsx prisma@6 @types/node @types/express
+npx tsc --init
+npx prisma init --datasource-provider postgresql
+
+--------------------------------------------
+
+2. Criar .env
+DATABASE_URL="postgresql://usuario:senha@host/banco?sslmode=require"
+
+--------------------------------------------
+
+3. package.json
+"scripts": {
+  "dev": "tsx watch --env-file=.env src/server.ts",
+  "build": "prisma generate && tsc",
+  "start": "node dist/server.js"
+}
+
+--------------------------------------------
+
+4. tsconfig.json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "rootDir": "src",
+    "outDir": "dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts"]
+}
+
+--------------------------------------------
+
+5. 
+src/
+├── lib/prisma.ts
+├── schemas/index.ts
+├── services/
+│   ├── author.service.ts
+│   └── post.service.ts
+├── controllers/
+│   ├── author.controller.ts
+│   └── post.controller.ts
+├── routes/index.ts
+├── middlewares/errorHandler.ts
+├── app.ts
+└── server.ts
+
+--------------------------------------------
+
+6. No schema.prisma
+model Author {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  posts     Post[]
+  createdAt DateTime @default(now())
+}
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String?
+  published Boolean  @default(false)
+  author    Author   @relation(fields: [authorId], references: [id])
+  authorId  Int
+  createdAt DateTime @default(now())
+}
+
+--------------------------------------------
+
+7. Configuração do banco de dados
+Criar um database no postgresql, local mesmo. PGAdmin -> Create database
+Dentro do database, Query Tool-> 
+CREATE USER nome_do_usuario WITH PASSWORD 'sua_senha_segura';
+. CREATE USER web2 WITH PASSWORD '123456789';
+. ALTER USER web2 WITH LOGIN CREATEDB;
+. ALTER DATABASE "web2-posts" OWNER TO web2; //Para facilitar as permissões do db
+
+url de conexão no .env: 
+DATABASE_URL="postgresql://web2:123456789@localhost:5432/web2-posts?schema=public"
+
+--------------------------------------------
+
+8. Criar SQL a partir do prisma
+npx prisma migrate dev --name init
+. foi criado a pasta migrations com o SQL que foi executado no db.
+
+--------------------------------------------
+
+9. Adicionar os arquivos...
+schemas, lib, services, routes, middlewares, etc..
+
+--------------------------------------------
+
+10. Testar
+npm run dev
+
+
+curl -X POST localhost:3000/authors -H "Content-Type: application/json" -d "{\"name\":\"Ana Souza\",\"email\":\"ana@email.com\"}"
+
+# listar com filtro e paginação
+curl "localhost:3000/posts?published=true&page=1&limit=5"

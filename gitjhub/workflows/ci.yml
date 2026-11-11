@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test-migrations:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ${{ secrets.POSTGRES_USER }}"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432/${{ vars.POSTGRES_DB }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Gerar Prisma Client
+        run: npx prisma generate
+
+      - name: Aplicar migrations (estrutura)
+        run: npx prisma migrate deploy
+
+      - name: Verificar status das migrations
+        run: npx prisma migrate status
+
+      - name: Verificar tabelas criadas
+        run: |
+          docker exec ${{ job.services.postgres.id }} \
+            psql -U ${{ secrets.POSTGRES_USER }} -d ${{ vars.POSTGRES_DB }} -c '\dt'
+
+      - name: Build da imagem Docker
+        run: docker build -t atv-web:ci .
+
+      - name: Subir a API em container
+        run: |
+          docker run -d --name api --network host \
+            -e DATABASE_URL="$DATABASE_URL" -e PORT=3000 atv-web:ci
+          for i in $(seq 1 20); do
+            curl -sf http://localhost:3000/health && exit 0
+            sleep 2
+          done
+          docker logs api
+          exit 1
+
+      - name: Testar dados (inserir e consultar)
+        run: |
+          curl -sf -X POST http://localhost:3000/authors \
+            -H "Content-Type: application/json" \
+            -d '{"name":"Maria Silva","email":"maria@teste.com"}'
+
+          curl -sf -X POST http://localhost:3000/posts \
+            -H "Content-Type: application/json" \
+            -d '{"title":"Primeiro post","content":"Olá","authorId":1}'
+
+          curl -sf http://localhost:3000/posts | tee resp.json
+          grep -q "Primeiro post" resp.json
+
+      - name: Logs da API (em caso de falha)
+        if: failure()
+        run: docker logs api
